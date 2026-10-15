@@ -1,0 +1,33 @@
+#!/bin/bash
+# bwrap — a wrapper, installed as ~/.local/bin/bwrap (before /usr/bin in PATH), that lets Claude Code's
+# sandbox run on Ubuntu 26.04 without changing AppArmor (anthropics/claude-code#43454).
+# https://github.com/EddyPronk/claude-code-bwrap-workaround
+#
+# Claude Code runs commands as  bwrap ... /bin/bash -c '<script>'  and its script starts the command
+# with  ARGV0=apply-seccomp /proc/self/fd/3 <command>  (its own binary, under that name). That helper
+# makes a nested user namespace, which Ubuntu's unpriv_bwrap profile forbids. This wrapper replaces
+# exactly that text with seccomp-exec.py, which installs Claude Code's seccomp filters without one.
+# Every other call, and any call without that exact text, goes to /usr/bin/bwrap unchanged.
+#
+# AppArmor attaches to /usr/bin/bwrap, so the real bwrap runs under the same policy as before:
+# nothing is granted, only the namespace step is avoided.
+set -u
+REAL=/usr/bin/bwrap
+HELPER=${BWRAP_WORKAROUND_HELPER:-$HOME/.local/share/claude-code-bwrap-workaround/seccomp-exec.py}
+# The generated invocation: the helper, then the command as  /bin/bash -c '...'. Claude Code's script
+# puts it after its socat bridges, before any text of the command, so the first match is the generated
+# one; only that one is replaced (the command's own text is left as it is).
+MARK='ARGV0=apply-seccomp /proc/self/fd/3 /bin/bash -c '
+
+[ $# -gt 0 ] || exec "$REAL"
+last=${!#}
+case $last in
+    *"$MARK"*) ;;
+    *) exec "$REAL" "$@" ;;
+esac
+[ -r "$HELPER" ] || { echo "bwrap wrapper: $HELPER is missing; not running the command" >&2; exit 126; }
+printf -v helper_q '%q' "$HELPER"
+# python3 -I: isolated mode, so nothing from the environment (PYTHONPATH, a sitecustomize, user site
+# packages, the current directory) runs before the filters are installed.
+new=${last/"$MARK"/"/usr/bin/python3 -I $helper_q /bin/bash -c "}
+exec "$REAL" "${@:1:$#-1}" "$new"

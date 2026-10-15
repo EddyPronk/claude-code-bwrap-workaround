@@ -1,0 +1,12 @@
+pass: the filters apply
+pass: AF_UNIX refused
+pass: PYTHONPATH can't run code before the filters (python3 -I)
+pass: the marker inside the command is left alone
+pass: a helper path with a space and a quote
+pass: a missing helper refuses to run the command
+pass: install.sh refuses to replace another bwrap
+pass: install.sh --uninstall leaves another bwrap
+pass: install.sh installs
+pass: install.sh --uninstall removes ours
+
+wrapper-tests.sh: all passed

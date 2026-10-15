@@ -1,0 +1,123 @@
+Claude Code: 2.1.301 (Claude Code)
+python3-seccomp (isolated mode): loads
+== 1. without the workaround (bwrap: /usr/bin/bwrap; allowAllUnixSockets: false)
+$ python3 /home/ubuntu/claude-code-bwrap-workaround/probe.py
+Exit code 1
+apply-seccomp: write /proc/self/setgroups (nested userns is capability-restricted; caller must provide CAP_SYS_ADMIN): Permission denied
+$ ps -eo pid,ppid,comm
+Exit code 1
+apply-seccomp: write /proc/self/setgroups (nested userns is capability-restricted; caller must provide CAP_SYS_ADMIN): Permission denied
+  pass: apply-seccomp: write /proc/self/setgroups
+== 2. install
+installed /home/ubuntu/.local/bin/bwrap and /home/ubuntu/.local/share/claude-code-bwrap-workaround/seccomp-exec.py
+bwrap resolves to /home/ubuntu/.local/bin/bwrap: done
+== 3. with the workaround (bwrap: /home/ubuntu/.local/bin/bwrap; allowAllUnixSockets: false)
+$ python3 /home/ubuntu/claude-code-bwrap-workaround/probe.py
+Seccomp: 2   Seccomp_filters: 2
+socket(AF_UNIX)                          EPERM
+socket(AF_VSOCK)                         EPERM
+socket(AF_INET)                          ok
+socketpair(AF_UNIX)                      ok
+io_uring_setup                           EPERM
+io_uring_enter                           EPERM
+io_uring_register                        EPERM
+unshare(CLONE_NEWUSER)                   EPERM
+unshare(CLONE_NEWNS)                     EPERM
+unshare(UNSHARE_EMPTY_MNTNS)             EPERM
+clone(CLONE_NEWUSER)                     EPERM
+clone(CLONE_NEWNS)                       EPERM
+clone3                                   ENOSYS
+setns                                    EPERM
+mount                                    EPERM
+umount2                                  EPERM
+pivot_root                               EPERM
+open_tree                                EPERM
+move_mount                               EPERM
+fsopen                                   EPERM
+fsconfig                                 EPERM
+fsmount                                  EPERM
+fspick                                   EPERM
+mount_setattr                            EPERM
+open_tree_attr                           EPERM
+a thread (clone, via clone3 fallback)    ok
+fork                                     ok
+$ ps -eo pid,ppid,comm
+    PID    PPID COMMAND
+      1       0 bwrap
+      2       1 bash
+      3       2 socat
+      4       2 socat
+      5       2 bash
+      6       5 ps
+  pass: ^Seccomp: 2 
+  pass: ^socket\(AF_UNIX\) +EPERM
+  pass: ^socket\(AF_VSOCK\) +EPERM
+  pass: ^socket\(AF_INET\) +ok
+  pass: ^socketpair\(AF_UNIX\) +ok
+  pass: ^io_uring_setup +EPERM
+  pass: ^io_uring_enter +EPERM
+  pass: ^io_uring_register +EPERM
+  pass: ^unshare\(CLONE_NEWUSER\) +EPERM
+  pass: ^unshare\(CLONE_NEWNS\) +EPERM
+  pass: ^unshare\(UNSHARE_EMPTY_MNTNS\) +EPERM
+  pass: ^clone\(CLONE_NEWUSER\) +EPERM
+  pass: ^clone\(CLONE_NEWNS\) +EPERM
+  pass: ^clone3 +ENOSYS
+  pass: ^setns +EPERM
+  pass: ^mount +EPERM
+  pass: ^umount2 +EPERM
+  pass: ^pivot_root +EPERM
+  pass: ^open_tree +EPERM
+  pass: ^move_mount +EPERM
+  pass: ^fsopen +EPERM
+  pass: ^fsconfig +EPERM
+  pass: ^fsmount +EPERM
+  pass: ^fspick +EPERM
+  pass: ^mount_setattr +EPERM
+  pass: ^open_tree_attr +EPERM
+  pass: ^a thread .* ok
+  pass: ^fork +ok
+== 4. for comparison: allowAllUnixSockets, without the workaround
+removed the workaround (/home/ubuntu/.local/bin/bwrap, /home/ubuntu/.local/share/claude-code-bwrap-workaround/seccomp-exec.py)
+== 4. allowAllUnixSockets (bwrap: /usr/bin/bwrap; allowAllUnixSockets: true)
+$ python3 /home/ubuntu/claude-code-bwrap-workaround/probe.py
+Seccomp: 0   Seccomp_filters: 0
+socket(AF_UNIX)                          ok
+socket(AF_VSOCK)                         ok
+socket(AF_INET)                          ok
+socketpair(AF_UNIX)                      ok
+io_uring_setup                           ok
+io_uring_enter                           EBADF
+io_uring_register                        EINVAL
+unshare(CLONE_NEWUSER)                   ok
+unshare(CLONE_NEWNS)                     EPERM
+unshare(UNSHARE_EMPTY_MNTNS)             EINVAL
+clone(CLONE_NEWUSER)                     EPERM
+clone(CLONE_NEWNS)                       EPERM
+clone3                                   EINVAL
+setns                                    EBADF
+mount                                    EFAULT
+umount2                                  EFAULT
+pivot_root                               EFAULT
+open_tree                                EFAULT
+move_mount                               EPERM
+fsopen                                   EPERM
+fsconfig                                 EINVAL
+fsmount                                  EPERM
+fspick                                   EPERM
+mount_setattr                            EINVAL
+open_tree_attr                           EFAULT
+a thread (clone, via clone3 fallback)    ok
+fork                                     ok
+$ ps -eo pid,ppid,comm
+    PID    PPID COMMAND
+      1       0 bwrap
+      2       1 bash
+      3       2 socat
+      4       2 socat
+      5       2 ps
+  pass: ^Seccomp: 0 
+  pass: ^socket\(AF_UNIX\) +ok
+  pass: ^io_uring_setup +ok
+
+verify.sh: all checks passed

@@ -1,0 +1,24 @@
+# probe.py inside Claude Code 2.1.296's own sandbox on Debian 13 (this host), 2026-10-15
+Seccomp: 2
+socket(AF_UNIX)                          EPERM
+socket(AF_VSOCK)                         ok
+socket(AF_INET)                          ok
+socketpair(AF_UNIX)                      ok
+io_uring_setup                           EPERM
+unshare(CLONE_NEWUSER)                   ok
+unshare(CLONE_NEWNS)                     ok
+clone3                                   EINVAL
+setns                                    EBADF
+mount                                    EFAULT
+umount2                                  EFAULT
+pivot_root                               EFAULT
+open_tree                                EFAULT
+move_mount                               EFAULT
+fsopen                                   EFAULT
+fsconfig                                 EINVAL
+fsmount                                  EBADF
+fspick                                   EFAULT
+mount_setattr                            EINVAL
+open_tree_attr                           ENOSYS
+a thread (clone, via clone3 fallback)    ok
+fork                                     ok
